@@ -18,7 +18,43 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+To enable expander, simply add the following to your hiera.yaml:
+```
+:backends
+  - expander
+```
+
+Once enabled, it will autoamtically expand your hierarchy. Take, for example, the following hierarchy:
+```
+:hierarchy:
+  - %{subdomain}/%{fqdn}
+  - env/%{my_env}/%{my_type}/%{my_subtype}
+  - global/%{my_type}/%{my_subtype}
+  - os/%{operatingsystem}/%{operatingsystemmajrelease}
+  - common
+```
+
+With hiera-expander enabled, your hierarchy would be expanded to the following:
+
+```
+:hierarchy:
+  - %{subdomain}/%{fqdn}
+  - %{subdomain}
+  - env/%{my_env}/%{my_type}/%{my_subtype}
+  - env/%{my_env}/%{my_type}
+  - env/%{my_env}
+  - global/%{my_type}/%{my_subtype}
+  - global/%{my_type}
+  - os/%{operatingsystem}/%{operatingsystemmajrelease}
+  - os/%{operatingsystem}
+  - common
+```
+
+Note that some of the roots (env, global and os) aren't actually expanded as well. Expanding non-interpolated roots would give you multiple "common" sources that would apply to *all* nodes - so by default, sources with non-interpolated roots aren't expanded down to the root. Should you actually desire this howerver, you can enable it by adding the following to your hiera.yaml:
+```
+:expander:
+  :include_roots: true
+```
 
 ## Contributing
 
