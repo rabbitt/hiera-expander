@@ -20,7 +20,7 @@ require 'hiera' # loads backend and config
 
 class Hiera
   module Expander
-    VERSION = "0.1.1"
+    VERSION = "0.1.2"
 
     def self.config
       @config ||= {
@@ -57,6 +57,8 @@ class Hiera
 
         # interpolate and expand sources
         hierarchy.collect! do |source|
+          static_root = source.include?('/') && !source[/^([^\/]+)/,1].include?('%{')
+
           case method(:parse_string).parameters.size
           when 4 then
             source = parse_string(source, scope, {}, :order_override => override)
@@ -70,7 +72,7 @@ class Hiera
           # duplicate source detection and removal phase.
           next if source.empty? || source =~ %r:(^/|//):
 
-          expand_source(source)
+          expand_source(source, !static_root)
         end.flatten!.reject!(&:nil?)
 
         # detect duplicate sources and removing them using a
@@ -101,7 +103,7 @@ class Hiera
       #
       # If you require the roots on all sources, simply set the config
       # entry 'include_roots' to true.
-      def expand_source(source)
+      def expand_source(source, interpolated_root)
         return [source] unless Expander.config[:expand_sources]
 
         root, path = source.split('/', 2)
@@ -112,7 +114,7 @@ class Hiera
           while subpath = path.pop
             paths << File.join(root, *path, subpath)
           end
-          paths << root if Expander.config[:include_roots]
+          paths << root if Expander.config[:include_roots] || interpolated_root
         end
       end
     end
