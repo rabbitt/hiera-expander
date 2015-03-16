@@ -27,7 +27,7 @@ To enable expander, simply add the following to your hiera.yaml:
 Once enabled, it will autoamtically expand your hierarchy. Take, for example, the following hierarchy:
 ```
 :hierarchy:
-  - %{subdomain}/%{fqdn}
+  - '%{subdomain}/%{fqdn}'
   - env/%{my_env}/%{my_type}/%{my_subtype}
   - global/%{my_type}/%{my_subtype}
   - os/%{operatingsystem}/%{operatingsystemmajrelease}
@@ -38,8 +38,8 @@ With hiera-expander enabled, your hierarchy would be expanded to the following:
 
 ```
 :hierarchy:
-  - %{subdomain}/%{fqdn}
-  - %{subdomain}
+  - '%{subdomain}/%{fqdn}'
+  - '%{subdomain}'
   - env/%{my_env}/%{my_type}/%{my_subtype}
   - env/%{my_env}/%{my_type}
   - env/%{my_env}
