@@ -21,15 +21,13 @@ require 'hiera' # loads backend and config
 class Hiera
   module Expander
     VERSION = "0.0.1"
-  end
 
-  alias_method :original_initialize, :initialize
-  def initialize(*args)
-    original_initialize(*args)
-    Config[:expander] ||= {
-      expand_sources: true,
-      include_roots:  false
-    }
+    def self.config
+      @config ||= {
+        expand_sources: true,
+        include_roots:  false
+      }.merge(Config[:expander] || {})
+    end
   end
 
   module Backend
@@ -45,24 +43,42 @@ class Hiera
       #
       # The source names will be subject to variable expansion based
       # on scope
-      def datasources(scope, override=nil, hierarchy=nil)
+      alias_method :original_datasources, :datasources
+      def datasources(scope, override=nil, hierarchy=nil, &block)
         if hierarchy
           hierarchy = [hierarchy]
         elsif Config.include?(:hierarchy)
           hierarchy = [Config[:hierarchy]].flatten
         else
-          hierarchy = ["common"]
+          hierarchy = ['common']
         end
 
         hierarchy.insert(0, override) if override
 
-        hierarchy.flatten.map do |source|
-          source = parse_string(source, scope, {}, :order_override => override)
-          unless source.empty? || source =~ %r:(^/|/{2,}|/$):
-            expand_source(source).each do |src|
-              yield(src)
-            end
+        # interpolate and expand sources
+        hierarchy.collect! do |source|
+          case method(:parse_string).parameters.size
+          when 4 then
+            source = parse_string(source, scope, {}, :order_override => override)
+          else
+            source = parse_string(source, scope)
           end
+
+          # don't expand data sources that are required to have a complete set
+          # of valid node in their path (meaning, interpolated values are not nil).
+          source, expect = (source.split(':').reverse << 'r')
+          next if expect == 'r' && (source.empty? || source =~ %r:(^/|//):)
+
+          expand_source(source)
+        end.flatten!.reject!(&:nil?)
+
+        # cull duplicates using a 'keep-last' strategy
+        hierarchy.reverse!
+        hierarchy.uniq!
+        hierarchy.reverse!
+
+        hierarchy.map do |source|
+          yield(source) unless source.empty? || source =~ %r:(^/|//|/$):
         end
       end
 
@@ -84,7 +100,7 @@ class Hiera
       # If you require the roots on all sources, simply set the config
       # entry 'include_roots' to true.
       def expand_source(source)
-        return [source] unless Config[:expander][:expand_sources]
+        return [source] unless Expander.config[:expand_sources]
 
         root, path = source.split('/', 2)
         return [root] if path.nil? || path.empty?
@@ -94,7 +110,7 @@ class Hiera
           while subpath = path.pop
             paths << File.join(root, *path, subpath)
           end
-          paths << root if Config[:expander][:include_roots]
+          paths << root if Expander.config[:include_roots]
         end
       end
     end
