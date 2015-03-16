@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    hiera-expander (0.0.1)
+    hiera-expander (0.1.0)
 
 GEM
   remote: https://rubygems.org/
