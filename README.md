@@ -20,7 +20,7 @@ Or install it yourself as:
 
 To enable expander, simply add the following to your hiera.yaml:
 ```
-:backends
+:backends:
   - expander
 ```
 
