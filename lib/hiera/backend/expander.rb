@@ -64,15 +64,17 @@ class Hiera
             source = parse_string(source, scope)
           end
 
-          # don't expand data sources that are required to have a complete set
-          # of valid node in their path (meaning, interpolated values are not nil).
-          source, expect = (source.split(':').reverse << 'r')
-          next if expect == 'r' && (source.empty? || source =~ %r:(^/|//):)
+          # cull sources that are empty or have an empty interpolation in the
+          # beginning or middle of the path. Empty interpolations at the end
+          # of the source path are fine and may or may not be culled during the
+          # duplicate source detection and removal phase.
+          next if source.empty? || source =~ %r:(^/|//):
 
           expand_source(source)
         end.flatten!.reject!(&:nil?)
 
-        # cull duplicates using a 'keep-last' strategy
+        # detect duplicate sources and removing them using a
+        # 'keep-last-duplicate' strategy
         hierarchy.reverse!
         hierarchy.uniq!
         hierarchy.reverse!
