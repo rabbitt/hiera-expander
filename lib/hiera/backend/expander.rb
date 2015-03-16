@@ -16,18 +16,21 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 =end
 
-require 'hiera/backend'
-require 'hiera/config'
+require 'hiera' # loads backend and config
 
 class Hiera
   module Expander
     VERSION = "0.0.1"
   end
 
-  Config[:expander] ||= {
-    :expand_sources = true,
-    :include_roots  = false
-  }
+  alias_method :original_initialize, :initialize
+  def initialize(*args)
+    original_initialize(*args)
+    Config[:expander] ||= {
+      expand_sources: true,
+      include_roots:  false
+    }
+  end
 
   module Backend
     class << self
